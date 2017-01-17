@@ -24,14 +24,14 @@ public class SensorController {
 
     @RequestMapping(value = "/sensor", method = RequestMethod.POST)
     public String collect(@RequestBody SensorModel sensorModel) {
-        handleIotDataService.collectData(sensorModel);
+        handleIotDataService.insertSensorData(sensorModel);
         LOGGER.info("get data from iot {}", new Gson().toJson(sensorModel));
         return "success";
     }
 
     @RequestMapping(value = "/data", method = RequestMethod.GET)
     public SensorModel getData(Long timestamp) {
-        return handleIotDataService.queryData(timestamp);
+        return handleIotDataService.querySensorData(timestamp);
     }
 
 }
