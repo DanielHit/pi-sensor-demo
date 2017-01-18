@@ -7,8 +7,7 @@ import lombok.Data;
  */
 @Data
 public class SensorModel {
-    private int temperature;
-    private int humidity;
-    private int pm25;
+    private double temperature;
+    private double humidity;
     private Long timestamp;
 }

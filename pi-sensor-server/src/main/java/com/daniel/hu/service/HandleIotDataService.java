@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -45,7 +46,6 @@ public class HandleIotDataService {
                 .time(new Date().getTime(), TimeUnit.MILLISECONDS)
                 .addField(TEMPERATURE, sensorModel.getTemperature())
                 .addField(HUMIDITY, sensorModel.getHumidity())
-                .addField(PM_25, sensorModel.getPm25())
                 .build();
 
         batchPoints.point(point1);
@@ -56,16 +56,34 @@ public class HandleIotDataService {
         result.getResults().stream().forEach(p -> System.out.println(p.getSeries()));
     }
 
-    // TODO: 17/01/2017 需要更加的细化
     public SensorModel querySensorData(Long timestamp) {
+        SensorModel sensorModel = new SensorModel();
         String dbName = "indoor_data";
-        Long minTime = timestamp - 60 * 1000;  // 最小为一分钟之前
-        Long maxTime = timestamp + 60 * 1000;  // 最大为一分钟之后
 
-        Query query = new Query("SELECT temperature FROM sensor where time > " + minTime + " and time < " + maxTime , dbName);
+        Query query = new Query("SELECT humidity, temperature FROM indoor_data.autogen.sensor WHERE time > now() - 2m" , dbName);
         QueryResult result = influxDB.query(query);
-        result.getResults().stream().forEach(p -> System.out.println(p.getSeries()));
-        return new SensorModel();
+        List<QueryResult.Result> results = result.getResults();
+
+        final double[] temperature = {0};
+        final double[]  humidity = {0};
+
+        if (results.stream().findFirst().isPresent()) {
+            results.stream().findFirst().get().getSeries().forEach(p-> {
+                List<List<Object>> list = p.getValues();
+                list.forEach(model -> {
+                    temperature[0] += Double.parseDouble(model.get(2).toString());
+                    humidity[0] += Double.parseDouble(model.get(1).toString());
+                });
+                temperature[0] /= list.size();
+                humidity[0] /= list.size();
+            });
+        }
+
+        sensorModel.setTemperature(temperature[0]);
+        sensorModel.setHumidity(humidity[0]);
+        sensorModel.setTimestamp(new Date().getTime());
+
+        return sensorModel;
     }
 
 }
